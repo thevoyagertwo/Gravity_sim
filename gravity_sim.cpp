@@ -25,8 +25,10 @@ class Body
     sf::CircleShape s;
     sf::Vector2f screenPosition;
     sf::Vector3f position;
+    sf::Vector3f previousPosition;
     sf::Vector3f velocity;
     sf::Vector3f acceleration;
+    sf::Vector3f previousAcceleration;
 
 public:
     Body(int screenSize, int screenSizeAu, string name, float mass, float positionVelocityArray[6] )
@@ -39,6 +41,9 @@ public:
         this->velocity.x = positionVelocityArray[3]*1000;
         this->velocity.y = positionVelocityArray[4]*1000;
         this->velocity.z = positionVelocityArray[5]*1000;
+        this->previousPosition.x = position.x-velocity.x; // calculates previous position by x-vx
+        this->previousPosition.y = position.y-velocity.y;
+        this->previousPosition.z = position.z-velocity.z;
         this->acceleration.x = 0; // reset acceleration sum to 0
         this->acceleration.y = 0;
         this->acceleration.z = 0;
@@ -56,7 +61,7 @@ public:
         s.setRadius(8);
         } else if (name == "Earth"){
         s.setFillColor(sf::Color::Green);
-        s.setRadius(4);
+        s.setRadius(5);
         } else if (name == "mercury"){
         s.setFillColor(sf::Color::Red);
         s.setRadius(2);
@@ -68,7 +73,7 @@ public:
         s.setRadius(4);
         } else{
         s.setFillColor(sf::Color::White);
-        s.setRadius(5);
+        s.setRadius(3);
         }
     }
     float get_gMass()
@@ -112,49 +117,75 @@ public:
         for (size_t otherBody = 0; otherBody < solarSystem.size(); otherBody++)
         {
             if (otherBody != currentBody){
-                calculateForce(solarSystem[otherBody]);
+                cout << name << " " << solarSystem[otherBody].get_name() <<"\n"  ;
+                calculateAcceleration(solarSystem[otherBody]);
             }
 
         }
-        applyForce();
+        applyForceEuler();
         updateScreenPosition();
         
 
     }
 
-    void calculateForce(Body otherBody)
+    void calculateAcceleration(Body otherBody)
     {
         sf::Vector3f positionDelta = otherBody.get_position() - position;
         double distance = sqrt(positionDelta.x*positionDelta.x + positionDelta.y*positionDelta.y + positionDelta.z*positionDelta.z);
         
         double inverseDistance = 1.d/distance;
         double inverseDistance3 = inverseDistance * inverseDistance * inverseDistance; // multiplication quicker then division
+        cout << distance <<" " << otherBody.get_gMass()<< "\n";
 
-        acceleration.x += -otherBody.get_gMass() * position.x * inverseDistance3;
-        acceleration.y += -otherBody.get_gMass() * position.y * inverseDistance3;
-        acceleration.z += -otherBody.get_gMass() * position.z * inverseDistance3;
+        acceleration.x += otherBody.get_gMass() * (otherBody.position.x-position.x) * inverseDistance3;
+        acceleration.y += otherBody.get_gMass() * (otherBody.position.y-position.y) * inverseDistance3;
+        acceleration.z += otherBody.get_gMass() * (otherBody.position.z-position.z) * inverseDistance3;
 
              
     }
 
-    void applyForce()
+    void applyForceVerlet()
     {
-        float deltaTime = 60*60*24*0.01; // change to input to easily change 
-        // position.x += velocity.x * deltaTime + acceleration.x * deltaTime * deltaTime *.5;
-        // position.y += velocity.y * deltaTime + acceleration.y * deltaTime * deltaTime *.5;
-        // position.z += velocity.z * deltaTime + acceleration.z * deltaTime * deltaTime *.5;
+        float deltaTime = 60*60*24*0.1; // change to input to easily change 
+        float deltaTime2 = deltaTime*deltaTime; // precalc delta time squared
+        float tempx = position.x;
+        float tempy = position.y;
+        float tempz = position.z;
+
+        position.x = 2.*position.x - previousPosition.x + acceleration.x * deltaTime2;
+        position.y = 2.*position.y - previousPosition.y + acceleration.y * deltaTime2;
+        position.z = 2.*position.z - previousPosition.z + acceleration.z * deltaTime2;
+
+        previousPosition.x = tempx; // stores position in previous position for next calculation
+        previousPosition.y = tempy;
+        previousPosition.z = tempz;
 
         // velocity.x += acceleration.x * deltaTime;
         // velocity.y += acceleration.y * deltaTime;
         // velocity.z += acceleration.z * deltaTime;
+        
+    }
 
-        position.x += velocity.x * deltaTime + acceleration.x * deltaTime  ;
-        position.y += velocity.y * deltaTime + acceleration.y * deltaTime  ;
-        position.z += velocity.z * deltaTime + acceleration.z * deltaTime  ;
 
+    void applyForceEuler()
+    {
+        float deltaTime = 60*60*24*0.01; // change to input to easily change 
         velocity.x += acceleration.x * deltaTime;
         velocity.y += acceleration.y * deltaTime;
         velocity.z += acceleration.z * deltaTime;
+
+        position.x += velocity.x * deltaTime + acceleration.x * deltaTime * deltaTime *.5;
+        position.y += velocity.y * deltaTime + acceleration.y * deltaTime * deltaTime *.5;
+        position.z += velocity.z * deltaTime + acceleration.z * deltaTime * deltaTime *.5;
+
+
+        // position.x += velocity.x * deltaTime + acceleration.x * deltaTime  ;
+        // position.y += velocity.y * deltaTime + acceleration.y * deltaTime  ;
+        // position.z += velocity.z * deltaTime + acceleration.z * deltaTime  ;
+
+        // velocity.x += acceleration.x * deltaTime;
+        // velocity.y += acceleration.y * deltaTime;
+        // velocity.z += acceleration.z * deltaTime;
         
     }
 
@@ -166,7 +197,7 @@ public:
 int main()
 {
     int screenSize = 1000;
-    int screenSizeAu = 10;
+    int screenSizeAu = 1.5;
     // int numberOfBodies = 2;
 
     // below are values in km . s for Start=2022-05-16 TDB , Stop=2022-06-15, Step=1 (days) 4 with solar system barycenter
@@ -193,7 +224,8 @@ int main()
     Body moon(screenSize,screenSizeAu,"moon",7.349e22,moonArray);
     
 
-    vector<Body> solarSystem = {sun,earth,mercury,venus,mars,jupiter,saturn};
+    // vector<Body> solarSystem = {sun,earth,mercury,venus,mars,jupiter,saturn,io,moon};
+    vector<Body> solarSystem = {sun,earth,moon,mercury,venus};
 
 
     sf::RenderWindow window(sf::VideoMode(screenSize, screenSize), "Gravity Simulation");
