@@ -18,6 +18,8 @@ class Body
     double mass;
     double gMass; // gravitational constant (G) * mass
     double gConstant = 6.6743e-11; 
+    float deltaTime = 60*60*24*0.01; // change to input to easily change 
+    float deltaTime2 = deltaTime*deltaTime; // precalc delta time squared
     float screenOffset;
     float screenScaler;
 
@@ -41,9 +43,9 @@ public:
         this->velocity.x = positionVelocityArray[3]*1000;
         this->velocity.y = positionVelocityArray[4]*1000;
         this->velocity.z = positionVelocityArray[5]*1000;
-        this->previousPosition.x = position.x-velocity.x; // calculates previous position by x-vx
-        this->previousPosition.y = position.y-velocity.y;
-        this->previousPosition.z = position.z-velocity.z;
+        this->previousPosition.x = position.x - velocity.x * deltaTime; // calculates previous position by x-vx
+        this->previousPosition.y = position.y - velocity.y * deltaTime;
+        this->previousPosition.z = position.z - velocity.z * deltaTime;
         this->acceleration.x = 0; // reset acceleration sum to 0
         this->acceleration.y = 0;
         this->acceleration.z = 0;
@@ -117,8 +119,11 @@ public:
         for (size_t otherBody = 0; otherBody < solarSystem.size(); otherBody++)
         {
             if (otherBody != currentBody){
-                cout << name << " " << solarSystem[otherBody].get_name() <<"\n"  ;
+
+                // cout << name << " " << solarSystem[otherBody].get_name() <<"\n"  ;
+
                 calculateAcceleration(solarSystem[otherBody]);
+
             }
 
         }
@@ -135,7 +140,8 @@ public:
         
         double inverseDistance = 1.d/distance;
         double inverseDistance3 = inverseDistance * inverseDistance * inverseDistance; // multiplication quicker then division
-        cout << distance <<" " << otherBody.get_gMass()<< "\n";
+
+        // cout << distance <<" " << otherBody.get_gMass()<< "\n";
 
         acceleration.x += otherBody.get_gMass() * (otherBody.position.x-position.x) * inverseDistance3;
         acceleration.y += otherBody.get_gMass() * (otherBody.position.y-position.y) * inverseDistance3;
@@ -146,8 +152,6 @@ public:
 
     void applyForceVerlet()
     {
-        float deltaTime = 60*60*24*0.1; // change to input to easily change 
-        float deltaTime2 = deltaTime*deltaTime; // precalc delta time squared
         float tempx = position.x;
         float tempy = position.y;
         float tempz = position.z;
@@ -169,7 +173,6 @@ public:
 
     void applyForceEuler()
     {
-        float deltaTime = 60*60*24*0.01; // change to input to easily change 
         velocity.x += acceleration.x * deltaTime;
         velocity.y += acceleration.y * deltaTime;
         velocity.z += acceleration.z * deltaTime;
@@ -224,8 +227,8 @@ int main()
     Body moon(screenSize,screenSizeAu,"moon",7.349e22,moonArray);
     
 
-    // vector<Body> solarSystem = {sun,earth,mercury,venus,mars,jupiter,saturn,io,moon};
-    vector<Body> solarSystem = {sun,earth,moon,mercury,venus};
+    vector<Body> solarSystem = {sun,earth,mercury,venus,mars,jupiter,saturn,io,moon};
+    // vector<Body> solarSystem = {sun,earth,moon,mercury,venus};
 
 
     sf::RenderWindow window(sf::VideoMode(screenSize, screenSize), "Gravity Simulation");
