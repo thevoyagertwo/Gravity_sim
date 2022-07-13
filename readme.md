@@ -1,12 +1,8 @@
+C++ n-body gravitational simulation using SFML for plotting planet paths.
 
 
 
-g++ example.cpp -o example -L<:/usr/include> -lsfml-graphics -lsfml-window -lsfml-system  
-??? not working maybe just do on windows
-
-
-
-
+Notes:
 use this to plot in c++
 https://www.sfml-dev.org/   guide:   https://www.youtube.com/watch?v=oTWnV5su3m0
 download in wsl using sudo apt-get install libsfml-dev   
